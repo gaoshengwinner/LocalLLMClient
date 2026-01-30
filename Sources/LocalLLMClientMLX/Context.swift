@@ -4,7 +4,7 @@ import LocalLLMClientCore
 import MLX
 import MLXLLM
 import MLXLMCommon
-import MLXRandom
+//import MLXRandom
 import Tokenizers
 
 public final class Context: Sendable {
@@ -40,18 +40,20 @@ public final class Context: Sendable {
     ) async throws(LLMError) -> (any LanguageModel, any Tokenizer) {
         do {
             let configurationURL = url.appending(component: "config.json")
+            let configData = try Data(contentsOf: configurationURL)
             let baseConfiguration = try JSONDecoder().decode(
-                BaseConfiguration.self, from: Data(contentsOf: configurationURL)
+                BaseConfiguration.self,
+                from: configData
             )
             let model: any LanguageModel
             do {
                 model = try await VLMTypeRegistry.shared.createModel(
-                    configuration: configurationURL,
+                    configuration: configData,
                     modelType: baseConfiguration.modelType
                 )
             } catch {
                 model = try await LLMTypeRegistry.shared.createModel(
-                    configuration: configurationURL,
+                    configuration: configData,
                     modelType: baseConfiguration.modelType
                 )
             }
@@ -72,13 +74,14 @@ public final class Context: Sendable {
             let processorConfiguration = url.appending(
                 component: "preprocessor_config.json"
             )
+            let processorConfigData = try Data(contentsOf: processorConfiguration)
             let baseProcessorConfig = try JSONDecoder().decode(
                 BaseProcessorConfiguration.self,
-                from: Data(contentsOf: processorConfiguration)
+                from: processorConfigData
             )
 
             return await (try VLMProcessorTypeRegistry.shared.createModel(
-                configuration: processorConfiguration,
+                configuration: processorConfigData,
                 processorType: baseProcessorConfig.processorClass,
                 tokenizer: tokenizer
             ), true)
